@@ -139,6 +139,25 @@
   }
   .ptitle b{color:var(--red-dim);}
   .ptitle small{display:block;font-size:.72rem;font-weight:300;color:var(--sub);margin-top:4px;}
+  /* 선호 유형 칩 */
+  .prefs{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:0 0 16px;}
+  .prefs .plabel{font-size:.74rem;font-weight:700;color:var(--navy);margin-right:2px;}
+  .pchip{
+    background:var(--neu-bg);border:0;border-radius:999px;box-shadow:var(--neu-out-sm);
+    color:var(--sub);font-weight:700;font-size:.8rem;padding:9px 15px;cursor:pointer;
+    transition:box-shadow .15s,color .15s,transform .08s;
+  }
+  .pchip:hover{color:var(--red-dim);}
+  .pchip:active{transform:translateY(1px);box-shadow:var(--neu-in-sm);}
+  .pchip.on{background:var(--red-grad);color:#fff;box-shadow:var(--sh-red);}
+  body.locked .pchip{pointer-events:none;opacity:.55;}
+  .pref-sum{margin:0 0 14px;padding:12px 14px;border-radius:14px;background:var(--neu-bg);box-shadow:var(--neu-in-sm);}
+  .pref-sum h3{font-size:.8rem;font-weight:700;color:var(--navy);margin:0 0 8px;}
+  .pref-sum .row{display:flex;flex-wrap:wrap;gap:6px 10px;font-size:.8rem;margin:4px 0;}
+  .pref-sum .who{font-weight:700;color:var(--ink);min-width:7.5em;}
+  .pref-sum .none{color:var(--sub);font-weight:300;}
+  .pref-sum .common{margin-top:8px;padding-top:8px;box-shadow:0 -1px 0 rgba(163,152,136,.35);font-size:.84rem;}
+  .pref-sum .common b{color:var(--red-dim);}
   .banner{
     background:var(--neu-bg);box-shadow:var(--neu-in-sm);border-radius:12px;
     color:var(--navy);font-size:.8rem;font-weight:500;padding:11px 14px;margin-bottom:14px;
@@ -280,6 +299,7 @@
     <div class="wrap">
       <div id="banner" class="banner" hidden></div>
       <h1 class="ptitle" id="pageTitle"></h1>
+      <div id="prefs" class="prefs"></div>
       <div class="week-nav">
         <button class="nbtn" id="prevWeek">◀ 이전 주</button>
         <div class="range" id="weekRange"></div>
@@ -310,6 +330,25 @@
   const START_HOUR = 10;   // 10:00
   const END_HOUR = 19;     // ~19:00 (마지막 칸 18:00~19:00)
   const PIDS = ['p0', 'p1', 'p2'];   // Firestore 문서 안의 사람별 필드 이름 (PEOPLE 순서와 같음)
+  // 선호 유형: 사람별 맵의 'pref' 키에 id 배열로 저장 (날짜 키와 섞이지 않도록 isDateKey 로 구분)
+  const PREFS = [
+    { id: 'lunch',  label: '🍽 점심 미팅' },
+    { id: 'coffee', label: '☕ 오후 커피타임' },
+    { id: 'dinner', label: '🌙 저녁 미팅' },
+  ];
+  const PREF_KEY = 'pref';
+  const isDateKey = k => /^\d{4}-\d{2}-\d{2}$/.test(k);
+  const prefsOf = person => (data[person] && Array.isArray(data[person][PREF_KEY])) ? data[person][PREF_KEY] : [];
+  function togglePref(person, id) {
+    data[person] = data[person] || {};
+    const cur = prefsOf(person).slice();
+    const i = cur.indexOf(id);
+    if (i >= 0) cur.splice(i, 1); else cur.push(id);
+    if (cur.length) data[person][PREF_KEY] = cur; else delete data[person][PREF_KEY];
+    if (!Object.keys(data[person]).length) delete data[person];
+    persist(person);
+  }
+  const hasDates = person => !!data[person] && Object.keys(data[person]).some(isDateKey);
 
   // ───────── Firestore (baelab-ledger 프로젝트, meeting/{링크 키} 문서 하나) ─────────
   firebase.initializeApp({
@@ -532,7 +571,7 @@
     const box = document.getElementById('extra');
     if (activeTab === 3) {
       const slots = allCommonSlots();
-      const filled = PEOPLE.map(p => Object.keys(data[p] || {}).length
+      const filled = PEOPLE.map(p => (hasDates(p) || prefsOf(p).length)
         ? `<span class="pill yes">${p} 입력함</span>` : `<span class="pill no">${p} 미입력</span>`).join('');
       let html = `<div class="card"><div class="status">${filled}</div><h2>세 분 모두 가능한 시간 (이번 주부터 3주)</h2>`;
       if (!slots.length) {
@@ -570,9 +609,31 @@
     }
   }
 
+  function renderPrefs() {
+    const box = document.getElementById('prefs');
+    if (activeTab === 3) {
+      // 공통 탭: 세 분의 선호와 겹치는 유형
+      const common = PREFS.filter(pr => PEOPLE.every(p => prefsOf(p).includes(pr.id)));
+      const rows = PEOPLE.map(p => {
+        const labels = PREFS.filter(pr => prefsOf(p).includes(pr.id)).map(pr => pr.label);
+        return `<div class="row"><span class="who">${p}</span>${labels.length ? labels.join(' · ') : '<span class="none">아직 선택 없음</span>'}</div>`;
+      }).join('');
+      const commonTxt = common.length ? `세 분 공통 선호: <b>${common.map(pr => pr.label).join(' · ')}</b>`
+        : '<span class="none">세 분 모두 고른 유형은 아직 없습니다.</span>';
+      box.className = 'pref-sum';
+      box.innerHTML = `<h3>선호 유형</h3>${rows}<div class="common">${commonTxt}</div>`;
+      return;
+    }
+    const person = PEOPLE[activeTab];
+    box.className = 'prefs';
+    box.innerHTML = '<span class="plabel">선호 유형</span>' + PREFS.map(pr =>
+      `<button type="button" class="pchip ${prefsOf(person).includes(pr.id) ? 'on' : ''}" data-id="${pr.id}">${pr.label}</button>`).join('');
+    box.querySelectorAll('.pchip').forEach(b => b.onclick = () => { togglePref(person, b.dataset.id); renderPrefs(); });
+  }
+
   function render() {
     document.body.classList.toggle('locked', !loaded);   // 불러오기 전에는 칸 잠금
-    renderTabs(); renderGrid(); renderExtra();
+    renderTabs(); renderPrefs(); renderGrid(); renderExtra();
   }
 
   function goWeek(i) {
