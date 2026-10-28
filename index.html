@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>미팅 일정 조율</title>
+<meta name="description" content="박래형 님 · 배원규 교수님 · 코스메틱 대표님 미팅 일정 조율 — 앞으로 3주 안에서 가능한 시간을 눌러 주세요">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="미팅 일정 조율">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:url" content="https://baelab-create.github.io/meeting-scheduler-cosmetic/">
+<meta property="og:title" content="미팅 일정 조율 — 박래형 님 · 배원규 교수님 · 코스메틱 대표님">
+<meta property="og:description" content="본인 탭에서 가능한 시간을 눌러 주세요. 세 분 모두 되는 시간이 자동으로 모입니다 (이번 주부터 3주).">
+<meta property="og:image" content="https://baelab-create.github.io/meeting-scheduler-cosmetic/assets/og-meeting-v1.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="미팅 일정 조율 — 박래형 님 · 배원규 교수님 · 코스메틱 대표님">
+<meta name="twitter:image" content="https://baelab-create.github.io/meeting-scheduler-cosmetic/assets/og-meeting-v1.jpg">
+
+<link rel="stylesheet" href="https://baelab-create.github.io/drbae-fonts/gmarket.css">
+<style>
+  /* ============================================================
+     색·모양 — 닥터배 오프라인 세미나 페이지(갈색 책상 + 흰 슬라이드 + 빨간 사선 탭)와
+     그 안의 고객 안내 페이지(따뜻한 회색 뉴모픽 + 네이비 글자)를 그대로 따른다.
+     ============================================================ */
+  :root{
+    --desk:#6B6058;  --desk-d:#574E47;            /* 바깥 책상 바탕 */
+    --red:#FF4F4F;   --red-d:#F55B57; --red-dim:#EC524E;   /* 탭·선택 빨강 */
+    --paper:#FFFFFF;
+    --navy:#1F3A5C;  --ink:#262624;  --sub:#5E5B55;  --gold:#8E8271;
+
+    /* 뉴모픽 — 고객 안내 페이지 NEUMORPHISM 블록과 같은 값 */
+    --neu-bg:#E8E5DF;
+    --neu-light:rgba(255,255,255,.92);
+    --neu-dark:rgba(163,152,136,.52);
+    --neu-out:9px 9px 20px var(--neu-dark),-9px -9px 20px var(--neu-light);
+    --neu-out-md:6px 6px 14px var(--neu-dark),-6px -6px 14px var(--neu-light);
+    --neu-out-sm:3px 3px 8px var(--neu-dark),-3px -3px 8px var(--neu-light);
+    --neu-out-xs:2px 2px 5px var(--neu-dark),-2px -2px 5px var(--neu-light);
+    --neu-in:inset 5px 5px 12px var(--neu-dark),inset -5px -5px 12px var(--neu-light);
+    --neu-in-sm:inset 2px 2px 6px var(--neu-dark),inset -2px -2px 6px var(--neu-light);
+    --neu-groove:inset 0 1px 0 rgba(163,152,136,.38),inset 0 -1px 0 var(--neu-light);
+    --red-grad:linear-gradient(90deg,#EC524E 0%,#FF6A6A 100%);
+    --sh-red:0 6px 14px rgba(236,82,78,.38),-2px -2px 6px rgba(255,255,255,.6);
+
+    --tab-h:58px; --gap:18px; --slant:30px; --skew:46deg; --round:13px; --tab-drop:6px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    font-family:"Gmarket Sans","Pretendard",-apple-system,BlinkMacSystemFont,"Malgun Gothic",sans-serif;
+    font-weight:500;
+    background:linear-gradient(160deg,var(--desk) 0%,var(--desk-d) 100%);
+    color:var(--ink);
+    overflow:hidden;
+  }
+  button{font:inherit;}
+
+  .deck{position:fixed;inset:var(--gap);display:flex;flex-direction:column;}
+
+  /* ---------- 탭 바: 레퍼런스의 둥근 사선 탭 ---------- */
+  .tabbar{
+    position:relative;z-index:80;
+    display:flex;align-items:stretch;height:var(--tab-h);flex:0 0 auto;
+    overflow:hidden;
+    filter:drop-shadow(0 7px 16px rgba(0,0,0,.34));
+  }
+  /* 흰 탭 = 4번째 탭(공통 가능 시간). 누를 수 있는 버튼 */
+  .brand{
+    position:relative;z-index:60;flex:0 0 auto;color:var(--ink);
+    padding:9px calc(var(--slant) * .5 + 4px) 9px 26px;
+    display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+    border:0;background:none;cursor:pointer;text-align:left;
+    transition:color .18s;
+  }
+  .brand:hover .bt{color:var(--red-dim);}
+  .brand.on .bt{color:var(--red);}
+  .brand.on .bt::before{content:"✔ ";font-style:normal;}
+  .brand:focus-visible{outline:2px solid var(--red);outline-offset:-6px;border-radius:4px;}
+  .brand::before{
+    content:"";position:absolute;z-index:-1;left:0;right:20px;top:0;bottom:-14px;
+    background:var(--paper);border-radius:var(--round) 0 0 0;
+  }
+  .brand::after{
+    content:"";position:absolute;z-index:-2;top:0;bottom:-14px;
+    right:calc(var(--slant) * -1);width:calc(var(--slant) * 2 + 40px);
+    background:var(--paper);border-radius:var(--round);
+    transform:skewX(var(--skew));
+    box-shadow:4px 0 10px rgba(0,0,0,.33);
+  }
+  .brand .bt{font-size:1.08rem;font-weight:700;letter-spacing:.01em;white-space:nowrap;transition:color .18s;}
+  .brand .bs{font-size:.62rem;font-weight:300;color:var(--gold);margin-top:3px;white-space:nowrap;}
+
+  .tabs{display:flex;align-items:stretch;flex:1;min-width:0;}
+  .tab{
+    position:relative;appearance:none;border:0;background:none;cursor:pointer;
+    color:#FFEDEC;font-weight:700;font-size:.86rem;letter-spacing:.01em;white-space:nowrap;
+    padding:0 calc(var(--slant) * .5 + 9px);margin-left:calc(var(--slant) * -1);
+    flex:1 1 0;min-width:0;
+    display:flex;align-items:center;justify-content:center;
+    transition:color .18s;
+  }
+  .tab::before{
+    content:"";position:absolute;z-index:-1;left:0;right:0;top:var(--tab-drop);bottom:-14px;
+    background:#B8423E;border-radius:var(--round);            /* 선택 안 된 탭: 어두운 빨강 */
+    transform:skewX(var(--skew));
+    box-shadow:4px 0 10px rgba(0,0,0,.33), inset 0 -6px 12px rgba(0,0,0,.18);
+    transition:background .18s,box-shadow .18s;
+  }
+  .tab:first-child{padding-left:calc(var(--slant) * 1.4 + 8px);}
+  .tab{color:rgba(255,237,236,.72);}
+  .tab:hover{color:#fff;}
+  .tab:hover::before{background:#D64C47;}
+  .tab.on{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25);}
+  .tab.on::before{
+    background:var(--red);top:0;                               /* 선택 탭: 밝은 빨강, 다른 탭보다 위로 솟음 */
+    box-shadow:4px 0 10px rgba(0,0,0,.33), inset 0 3px 0 rgba(255,255,255,.55);
+  }
+  .tab.on .num{opacity:1;}
+  .tab:focus-visible{outline:2px solid #fff;outline-offset:-6px;border-radius:4px;}
+  .tab .num{font-size:.68rem;font-weight:300;opacity:.82;margin-right:7px;}
+  .tabend{flex:0 0 calc(var(--slant) + 2px);}
+
+  /* ---------- 본문(슬라이드) = 뉴모픽 면 ---------- */
+  .stage{
+    flex:1;min-height:0;position:relative;z-index:70;
+    background:var(--neu-bg);
+    border-radius:0 6px 6px 6px;
+    box-shadow:0 18px 50px rgba(0,0,0,.42);
+    overflow:auto;-webkit-overflow-scrolling:touch;
+  }
+  .wrap{max-width:780px;margin:0 auto;padding:22px 18px 40px;}
+
+  .ptitle{
+    margin:0 0 14px;font-size:1.35rem;font-weight:700;color:var(--navy);text-align:center;line-height:1.3;
+  }
+  .ptitle b{color:var(--red-dim);}
+  .ptitle small{display:block;font-size:.72rem;font-weight:300;color:var(--sub);margin-top:4px;}
+  .banner{
+    background:var(--neu-bg);box-shadow:var(--neu-in-sm);border-radius:12px;
+    color:var(--navy);font-size:.8rem;font-weight:500;padding:11px 14px;margin-bottom:14px;
+  }
+  .banner.error{color:#C8102E;}
+  .banner[hidden]{display:none;}
+
+  /* 주 이동 */
+  .week-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+  .nbtn{
+    background:var(--neu-bg);border:0;border-radius:12px;box-shadow:var(--neu-out-sm);
+    color:var(--navy);font-weight:700;font-size:.82rem;padding:10px 14px;cursor:pointer;
+    transition:box-shadow .15s,color .15s,transform .08s;white-space:nowrap;
+  }
+  .nbtn:hover{color:var(--red-dim);}
+  .nbtn:active{transform:translateY(1px);box-shadow:var(--neu-in-sm);}
+  .nbtn:disabled{opacity:.35;cursor:default;box-shadow:var(--neu-out-xs);color:var(--sub);}
+  .range{flex:1;text-align:center;font-weight:700;font-size:1rem;color:var(--ink);}
+  .range .wk{
+    display:inline-block;background:var(--red-grad);color:#fff;font-size:.7rem;font-weight:700;
+    padding:4px 11px;border-radius:999px;margin-right:8px;box-shadow:var(--sh-red);vertical-align:2px;
+  }
+  .hint{font-size:.76rem;font-weight:300;color:var(--sub);margin:0 0 14px;text-align:center;}
+
+  /* 시간표 */
+  table{width:100%;border-collapse:separate;border-spacing:6px 7px;table-layout:fixed;}
+  th{font-size:.78rem;color:var(--navy);font-weight:700;padding:2px 0 4px;}
+  th .d{display:block;font-size:.66rem;font-weight:300;color:var(--sub);margin-top:2px;}
+  th.today{color:var(--red-dim);}
+  th.today .d{color:var(--red-dim);font-weight:500;}
+  td.time{font-size:.7rem;font-weight:500;color:var(--sub);text-align:right;padding-right:6px;width:66px;white-space:nowrap;}
+  tr.sep td{padding:14px 0 4px;position:relative;}
+  tr.sep td::before{content:"";position:absolute;left:0;right:0;top:6px;height:2px;box-shadow:var(--neu-groove);}
+  tr.sep span{
+    display:inline-block;font-size:.68rem;font-weight:700;color:var(--navy);letter-spacing:.06em;
+    background:var(--neu-bg);box-shadow:var(--neu-out-xs);border-radius:999px;padding:4px 11px;margin-top:4px;
+  }
+  td.slot{
+    height:42px;border-radius:11px;text-align:center;font-size:.8rem;font-weight:700;
+    background:var(--neu-bg);box-shadow:var(--neu-out-sm);color:var(--sub);cursor:pointer;
+    transition:box-shadow .15s,color .15s,transform .08s;
+    -webkit-tap-highlight-color:transparent;user-select:none;
+  }
+  td.slot:hover{color:var(--red-dim);}
+  td.slot:active{transform:translateY(1px);}
+  td.slot.on{box-shadow:var(--neu-in-sm);color:var(--red-dim);font-size:1rem;}        /* 눌린 면 + 빨간 체크 */
+  td.slot.readonly{box-shadow:var(--neu-in-sm);cursor:default;}                     /* 결과 탭의 빈 우물 */
+  td.slot.partial{box-shadow:var(--neu-in-sm);color:var(--navy);cursor:default;}
+  td.slot.all{background:var(--red-grad);box-shadow:var(--sh-red);color:#fff;cursor:default;} /* 세 분 모두 */
+  td.slot.past{background:transparent;box-shadow:none;cursor:default;
+    background-image:repeating-linear-gradient(135deg,rgba(163,152,136,.18) 0 3px,transparent 3px 9px);}
+  td.slot.past:hover,td.slot.readonly:hover,td.slot.partial:hover{color:inherit;}
+  td.slot.all:hover{color:#fff;}
+  body.locked td.slot{pointer-events:none;opacity:.55;}
+
+  .legend{display:flex;gap:16px;font-size:.7rem;font-weight:300;color:var(--sub);margin:10px 0 0;flex-wrap:wrap;justify-content:center;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{display:inline-block;width:14px;height:14px;border-radius:5px;background:var(--neu-bg);}
+  .legend .l-on i{box-shadow:var(--neu-in-sm);}
+  .legend .l-all i{background:var(--red-grad);box-shadow:0 3px 7px rgba(236,82,78,.35);}
+  .legend .l-partial i{box-shadow:var(--neu-in-sm);}
+
+  /* 아래 카드·버튼 */
+  .card{background:var(--neu-bg);border-radius:22px;box-shadow:var(--neu-out-md);padding:18px 20px;margin-top:22px;}
+  .card h2{font-size:.95rem;font-weight:700;color:var(--navy);margin:0 0 10px;}
+  .card ul{margin:0;padding-left:18px;font-size:.88rem;line-height:1.8;}
+  .card li b{color:var(--navy);}
+  .card .empty{color:var(--sub);font-size:.8rem;font-weight:300;}
+  .status{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}
+  .pill{font-size:.7rem;font-weight:700;padding:5px 11px;border-radius:999px;background:var(--neu-bg);}
+  .pill.yes{color:var(--navy);box-shadow:var(--neu-out-xs);}
+  .pill.no{color:var(--sub);font-weight:300;box-shadow:var(--neu-in-sm);}
+  .reset-box{margin-top:16px;padding:16px 18px;border-radius:18px;background:var(--neu-bg);box-shadow:var(--neu-in-sm);}
+  .reset-box p{margin:0 0 12px;font-size:.78rem;font-weight:300;color:var(--sub);line-height:1.6;}
+  .btn{
+    background:var(--neu-bg);border:0;border-radius:12px;box-shadow:var(--neu-out-sm);
+    color:var(--navy);font-weight:700;font-size:.84rem;padding:11px 16px;cursor:pointer;
+    transition:box-shadow .15s,transform .08s,color .15s;
+  }
+  .btn:active{transform:translateY(1px);box-shadow:var(--neu-in-sm);}
+  .btn.danger{color:#C8102E;width:100%;}
+  .btn.small{font-size:.76rem;padding:8px 13px;color:var(--sub);box-shadow:var(--neu-out-xs);}
+  .btn.small:hover{color:var(--red-dim);}
+  .actions{display:flex;justify-content:flex-end;margin-top:14px;}
+
+  /* ---------- 아래 도구 줄 ---------- */
+  .foot{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:10px 4px 0;color:#E6DFD7;font-size:.74rem;font-weight:300;}
+  .foot .now{font-weight:700;color:#fff;font-size:.8rem;}
+  .foot .spacer{flex:1;}
+  .foot button{
+    color:#fff;background:rgba(255,255,255,.14);border:0;border-radius:999px;padding:6px 14px;
+    font-weight:500;font-size:.74rem;cursor:pointer;transition:background .15s;
+  }
+  .foot button:hover{background:rgba(255,255,255,.26);}
+  .foot kbd{font-family:inherit;font-size:.68rem;background:rgba(0,0,0,.22);border-radius:5px;padding:2px 6px;margin:0 1px;}
+
+  /* ---------- 좁은 화면 ---------- */
+  @media(max-width:1100px){
+    :root{--gap:10px;--tab-h:52px;--slant:27px;--round:11px;--tab-drop:5px;}
+    .brand{padding:8px calc(var(--slant) * .5 + 2px) 8px 16px;}
+    .brand .bt{font-size:.9rem;}
+    .brand .bs{display:none;}
+    .tabs{overflow-x:auto;scrollbar-width:none;}
+    .tabs::-webkit-scrollbar{display:none;}
+    .tab{flex:0 0 auto;font-size:.78rem;padding:0 calc(var(--slant) * .7 + 8px);}
+    .foot .keys{display:none;}
+  }
+  @media(max-width:600px){
+    .wrap{padding:16px 10px 32px;}
+    table{border-spacing:4px 6px;}
+    td.time{width:50px;font-size:.62rem;padding-right:3px;}
+    td.slot{height:38px;font-size:.72rem;}
+    .ptitle{font-size:1.1rem;}
+    .range{font-size:.78rem;}
+    .range .wk{font-size:.62rem;padding:3px 8px;margin-right:5px;}
+    .nbtn{padding:9px 9px;font-size:.7rem;}
+    .hint{font-size:.7rem;}
+    .card{padding:14px 14px;}
+  }
+  @media(max-width:480px){
+    .tab .num{display:none;}
+    .brand .bt{font-size:.8rem;}
+  }
+</style>
+</head>
+<body>
+
+<div class="deck">
+  <header class="tabbar">
+    <button class="brand" id="brandTab" type="button" title="세 분 모두 가능한 시간 보기">
+      <span class="bt">공통 가능 시간</span>
+      <span class="bs">박래형 님 · 배원규 교수님 · 코스메틱 대표님 미팅 일정 조율</span>
+    </button>
+    <nav class="tabs" id="tabs" aria-label="교수별 탭"></nav>
+    <span class="tabend"></span>
+  </header>
+
+  <main class="stage" id="stage">
+    <div class="wrap">
+      <div id="banner" class="banner" hidden></div>
+      <h1 class="ptitle" id="pageTitle"></h1>
+      <div class="week-nav">
+        <button class="nbtn" id="prevWeek">◀ 이전 주</button>
+        <div class="range" id="weekRange"></div>
+        <button class="nbtn" id="nextWeek">다음 주 ▶</button>
+      </div>
+      <p class="hint" id="hint"></p>
+      <table id="grid"></table>
+      <div class="legend" id="legend"></div>
+      <div id="extra"></div>
+    </div>
+  </main>
+
+  <div class="foot">
+    <span class="now" id="now"></span>
+    <span class="keys">탭 이동 <kbd>1</kbd>~<kbd>3</kbd> · 공통 <kbd>4</kbd> 또는 <kbd>←</kbd><kbd>→</kbd></span>
+    <span class="spacer"></span>
+    <button id="copyLink" type="button">링크 복사</button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+  // ───────── 설정 ─────────
+  const PEOPLE = ['박래형 님', '배원규 교수님', '코스메틱 대표님'];
+  const TABS = [...PEOPLE, '공통 가능 시간'];
+  const DAYS = ['월', '화', '수', '목', '금'];
+  const START_HOUR = 10;   // 10:00
+  const END_HOUR = 19;     // ~19:00 (마지막 칸 18:00~19:00)
+  const PIDS = ['p0', 'p1', 'p2'];   // Firestore 문서 안의 사람별 필드 이름 (PEOPLE 순서와 같음)
+
+  // ───────── Firestore (baelab-ledger 프로젝트, meeting/{링크 키} 문서 하나) ─────────
+  firebase.initializeApp({
+    apiKey: "AIzaSyBXE4UNgFmlnfQ5TkpR6h4DIKE2rjbI0_Q",
+    authDomain: "baelab-ledger.firebaseapp.com",
+    projectId: "baelab-ledger",
+    appId: "1:301215647344:web:9026cd464a9403629516b5"
+  });
+  const db = firebase.firestore();
+  // 링크만 눌러도 열리도록 기본 문서를 정해 둔다(교수님 지시: 공개 저장소라 키·비밀번호 없음).
+  // 다른 모임에 같은 페이지를 쓰려면 ?k=<20자 이상 아무 문자열> 로 문서를 바꿀 수 있다.
+  const DEFAULT_KEY = 'meeting-2026-10-park-bae-cosmetic';
+  const urlKey = new URLSearchParams(location.search).get('k') || '';
+  const LINK_KEY = urlKey.length >= 20 ? urlKey : DEFAULT_KEY;
+  const docRef = db.collection('meeting').doc(LINK_KEY);
+
+  // ───────── 상태 ─────────
+  // data = { "박래형 님": { "2026-10-20": [10, 11, ...] }, ... }
+  let data = {};
+  let loaded = false;
+  let activeTab = 0;                 // 0~2 = 사람, 3 = 결과
+  const WEEKS = 3;                   // 이번 주 + 다음 주 + 다다음 주 (2026-10-23 교수님 지시로 한 주 연장)
+  const WEEK_LABEL = ['이번 주', '다음 주', '다다음 주'];
+  const baseMonday = mondayOf(new Date());
+  let weekIndex = 0;                 // 0 = 이번 주, 1 = 다음 주
+  function weekStartOf(i) { return addDays(baseMonday, i * 7); }
+  let weekStart = weekStartOf(weekIndex);
+
+  function showBanner(msg, isError) {
+    const el = document.getElementById('banner');
+    el.textContent = msg; el.className = 'banner' + (isError ? ' error' : ''); el.hidden = !msg;
+  }
+  // 한 사람의 선택을 통째로 저장 (dotted path 업데이트 → 해제한 날짜도 함께 반영됨)
+  let docExists = false;            // 문서가 아직 없으면 update 대신 set(merge)로 만든다
+  async function persist(person) {
+    if (!docRef) return;
+    const pid = PIDS[PEOPLE.indexOf(person)];
+    const payload = data[person] || {};
+    const ts = firebase.firestore.FieldValue.serverTimestamp();
+    try {
+      if (docExists) await docRef.update({ ['people.' + pid]: payload, updatedAt: ts });
+      else { await docRef.set({ people: { [pid]: payload }, updatedAt: ts }, { merge: true }); docExists = true; }
+    } catch (e) {
+      if (e.code === 'not-found') {
+        try { await docRef.set({ people: { [pid]: payload }, updatedAt: ts }, { merge: true }); docExists = true; }
+        catch (e2) { showBanner('저장에 실패했습니다: ' + (e2.message || e2), true); }
+      } else {
+        showBanner('저장에 실패했습니다: ' + (e.message || e), true);
+      }
+    }
+  }
+  async function persistReset() {
+    if (!docRef) return;
+    try { await docRef.set({ people: {}, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+    catch (e) { showBanner('리셋에 실패했습니다: ' + (e.message || e), true); }
+  }
+  function subscribe() {
+    let creating = false;
+    docRef.onSnapshot(snap => {
+      docExists = snap.exists;
+      if (!snap.exists && !creating) {   // 첫 접속: 빈 문서를 만들어 두면 이후 저장이 단순해진다
+        creating = true;
+        docRef.set({ people: {}, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(() => {});
+      }
+      const people = (snap.exists && snap.data().people) || {};
+      const next = {};
+      PEOPLE.forEach((p, i) => { if (people[PIDS[i]] && Object.keys(people[PIDS[i]]).length) next[p] = people[PIDS[i]]; });
+      data = next; loaded = true;
+      showBanner('');
+      render();
+    }, e => showBanner('불러오지 못했습니다: ' + (e.message || e), true));
+  }
+
+  // ───────── 날짜 유틸 ─────────
+  function mondayOf(d) {
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const day = (x.getDay() + 6) % 7;   // 월=0 ... 일=6
+    x.setDate(x.getDate() - day);
+    return x;
+  }
+  function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  function key(d) {
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  }
+  function fmtMD(d) { return `${d.getMonth() + 1}/${d.getDate()}`; }
+  const h12 = h => (h > 12 ? h - 12 : h);
+  function fmtHour(h) { return `${h12(h)}시~${h12(h + 1)}시`; }   // 12시~1시 형식
+  const SECTIONS = { 12: '오후 · 점심 이후', 18: '저녁' };          // 이 시각 앞에 구분선 (저녁 = 6시~7시 한 칸)
+  function fmtFull(k) {
+    const [y, m, d] = k.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return `${y}년 ${m}월 ${d}일 (${DAYS[(dt.getDay() + 6) % 7] || '주말'})`;
+  }
+  const todayKey = key(new Date());
+  const windowKeys = new Set();      // 표시 기간(3주 × 월~금)의 날짜 키
+  for (let w = 0; w < WEEKS; w++) for (let i = 0; i < 5; i++) windowKeys.add(key(addDays(weekStartOf(w), i)));
+  function isPast(dk, h) {
+    // 이미 지난 칸(날짜가 지났거나, 오늘인데 그 시간이 끝난 칸)
+    const now = new Date();
+    if (dk < todayKey) return true;
+    return dk === todayKey && now.getHours() >= h + 1;
+  }
+
+  // ───────── 가용 여부 ─────────
+  function has(person, dk, h) {
+    return !!(data[person] && data[person][dk] && data[person][dk].includes(h));
+  }
+  function toggle(person, dk, h) {
+    data[person] = data[person] || {};
+    const arr = data[person][dk] || [];
+    const i = arr.indexOf(h);
+    if (i >= 0) arr.splice(i, 1); else arr.push(h);
+    arr.sort((a, b) => a - b);
+    if (arr.length) data[person][dk] = arr; else delete data[person][dk];
+    persist(person);
+  }
+  function countAvailable(dk, h) {
+    return PEOPLE.filter(p => has(p, dk, h)).length;
+  }
+  function allCommonSlots() {
+    // 표시 기간(3주) 안에서 3명 모두 가능한 칸을 모은다
+    const out = [];
+    [...windowKeys].sort().forEach(dk => {
+      for (let h = START_HOUR; h < END_HOUR; h++) {
+        if (countAvailable(dk, h) === PEOPLE.length) out.push({ dk, h });
+      }
+    });
+    return out;
+  }
+
+  // ───────── 렌더 ─────────
+  // 빨간 사선 탭 3개 = 교수님 세 분, 흰 탭(brand) = 공통 가능 시간(activeTab 3)
+  const tabsEl = document.getElementById('tabs');
+  const brandEl = document.getElementById('brandTab');
+  PEOPLE.forEach((name, i) => {
+    const b = document.createElement('button');
+    b.className = 'tab'; b.type = 'button';
+    b.innerHTML = '<span class="num">0' + (i + 1) + '</span>' + name;
+    b.addEventListener('click', () => { activeTab = i; render(); });
+    tabsEl.appendChild(b);
+  });
+  brandEl.addEventListener('click', () => { activeTab = 3; render(); });
+  function renderTabs() {
+    const tabs = tabsEl.children;
+    for (let k = 0; k < PEOPLE.length; k++) {
+      tabs[k].classList.toggle('on', k === activeTab);
+      tabs[k].style.zIndex = (k === activeTab) ? 55 : 50 - k;   // 왼쪽 탭이 오른쪽 탭 위로, 선택 탭은 맨 위
+      tabs[k].setAttribute('aria-current', k === activeTab ? 'page' : 'false');
+    }
+    brandEl.classList.toggle('on', activeTab === 3);
+    brandEl.setAttribute('aria-current', activeTab === 3 ? 'page' : 'false');
+    document.getElementById('now').textContent = TABS[activeTab];
+    if (location.hash !== '#' + (activeTab + 1)) history.replaceState(null, '', location.search + '#' + (activeTab + 1));
+    if (activeTab < 3) tabs[activeTab].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+
+  function renderGrid() {
+    const isResult = activeTab === 3;
+    const person = PEOPLE[activeTab];
+    const grid = document.getElementById('grid');
+    const days = DAYS.map((_, i) => addDays(weekStart, i));
+
+    document.getElementById('weekRange').innerHTML =
+      `<span class="wk">${WEEK_LABEL[weekIndex]}</span>${fmtMD(days[0])} (월) ~ ${fmtMD(days[4])} (금)`;
+    document.getElementById('prevWeek').disabled = weekIndex === 0;
+    document.getElementById('nextWeek').disabled = weekIndex === WEEKS - 1;
+    document.getElementById('pageTitle').innerHTML = isResult
+      ? '세 분 <b>공통</b> 가능 시간<small>박래형 님 · 배원규 교수님 · 코스메틱 대표님</small>'
+      : `<b>${person}</b>의 가능한 시간<small>지금 ${person} 탭이 열려 있습니다</small>`;
+    document.getElementById('hint').textContent = isResult
+      ? '빨간 칸이 세 분 모두 가능한 시간입니다. 숫자가 있는 칸은 일부만 가능한 시간입니다.'
+      : `${person}, 미팅 가능한 시간 칸을 눌러 주세요. 다시 누르면 해제됩니다.`;
+
+    let html = '<thead><tr><th></th>';
+    days.forEach(d => {
+      const dk = key(d);
+      html += `<th class="${dk === todayKey ? 'today' : ''}">${DAYS[(d.getDay() + 6) % 7]}<span class="d">${fmtMD(d)}</span></th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    for (let h = START_HOUR; h < END_HOUR; h++) {
+      if (SECTIONS[h]) html += `<tr class="sep"><td colspan="6"><span>${SECTIONS[h]}</span></td></tr>`;
+      html += `<tr><td class="time">${fmtHour(h)}</td>`;
+      days.forEach(d => {
+        const dk = key(d);
+        const past = isPast(dk, h);
+        if (isResult) {
+          const n = past ? 0 : countAvailable(dk, h);
+          const cls = past ? 'past' : n === PEOPLE.length ? 'all' : n > 0 ? 'partial' : 'readonly';
+          const label = n === PEOPLE.length ? '모두' : n > 0 ? `${n}명` : '';
+          html += `<td class="slot ${cls}">${label}</td>`;
+        } else if (past) {
+          html += `<td class="slot past"></td>`;
+        } else {
+          const on = has(person, dk, h);
+          html += `<td class="slot ${on ? 'on' : ''}" data-dk="${dk}" data-h="${h}">${on ? '✓' : ''}</td>`;
+        }
+      });
+      html += '</tr>';
+    }
+    html += '</tbody>';
+    grid.innerHTML = html;
+
+    if (!isResult) {
+      grid.querySelectorAll('td.slot:not(.past)').forEach(td => {
+        td.onclick = () => {
+          toggle(person, td.dataset.dk, Number(td.dataset.h));
+          renderGrid();
+        };
+      });
+    }
+
+    document.getElementById('legend').innerHTML = isResult
+      ? '<span class="l-all"><i></i>세 분 모두 가능</span><span class="l-partial"><i></i>일부 가능 (인원수 표시)</span>'
+      : '<span class="l-on"><i></i>눌린 칸 = 가능한 시간</span>';
+  }
+
+  function renderExtra() {
+    const box = document.getElementById('extra');
+    if (activeTab === 3) {
+      const slots = allCommonSlots();
+      const filled = PEOPLE.map(p => Object.keys(data[p] || {}).length
+        ? `<span class="pill yes">${p} 입력함</span>` : `<span class="pill no">${p} 미입력</span>`).join('');
+      let html = `<div class="card"><div class="status">${filled}</div><h2>세 분 모두 가능한 시간 (이번 주부터 3주)</h2>`;
+      if (!slots.length) {
+        html += '<p class="empty">아직 세 분 모두 겹치는 시간이 없습니다.</p>';
+      } else {
+        // 같은 날짜끼리 묶어서 표시
+        const byDate = {};
+        slots.forEach(s => (byDate[s.dk] = byDate[s.dk] || []).push(s.h));
+        html += '<ul>';
+        Object.keys(byDate).forEach(dk => {
+          const hours = byDate[dk].map(h => (h < 12 ? '오전 ' : '오후 ') + fmtHour(h)).join(', ');
+          html += `<li><b>${fmtFull(dk)}</b> — ${hours}</li>`;
+        });
+        html += '</ul>';
+      }
+      html += `</div>
+      <div class="reset-box">
+        <p>미팅이 정해졌거나 새로 날짜를 잡을 때는 리셋하세요. 세 분의 선택이 모두 지워지고 처음부터 다시 입력합니다.</p>
+        <button id="resetAll" class="btn danger" type="button">전체 리셋 — 세 분 선택 모두 지우기</button>
+      </div>`;
+      box.innerHTML = html;
+      document.getElementById('resetAll').onclick = () => {
+        if (!confirm('세 분의 선택을 모두 지우고 처음부터 다시 시작할까요?')) return;
+        data = {}; persistReset(); weekIndex = 0; weekStart = weekStartOf(0); activeTab = 0; render();
+      };
+    } else {
+      const person = PEOPLE[activeTab];
+      box.innerHTML = `<div class="actions">
+        <button id="clearMine" class="btn small" type="button">${person} 선택 지우기</button>
+      </div>`;
+      document.getElementById('clearMine').onclick = () => {
+        if (!confirm(`${person}의 선택을 모두 지울까요?`)) return;
+        delete data[person]; persist(person); render();
+      };
+    }
+  }
+
+  function render() {
+    document.body.classList.toggle('locked', !loaded);   // 불러오기 전에는 칸 잠금
+    renderTabs(); renderGrid(); renderExtra();
+  }
+
+  function goWeek(i) {
+    if (i < 0 || i >= WEEKS) return;
+    weekIndex = i; weekStart = weekStartOf(i); render();
+  }
+  document.getElementById('prevWeek').onclick = () => goWeek(weekIndex - 1);
+  document.getElementById('nextWeek').onclick = () => goWeek(weekIndex + 1);
+
+  // 숫자키 1~4 · 좌우 화살표로 탭 이동 (레퍼런스와 동일)
+  document.addEventListener('keydown', e => {
+    if (e.target.closest('input,textarea')) return;
+    if (e.key >= '1' && e.key <= String(TABS.length)) { activeTab = +e.key - 1; render(); }
+    else if (e.key === 'ArrowRight') { activeTab = (activeTab + 1) % TABS.length; render(); }
+    else if (e.key === 'ArrowLeft') { activeTab = (activeTab - 1 + TABS.length) % TABS.length; render(); }
+  });
+
+  // 링크 복사 (단톡방에 올릴 주소)
+  document.getElementById('copyLink').onclick = async () => {
+    const url = location.origin + location.pathname + (urlKey.length >= 20 ? location.search : '');
+    try { await navigator.clipboard.writeText(url); showBanner('링크를 복사했습니다. 단톡방에 붙여 넣으세요.'); }
+    catch { prompt('이 주소를 복사하세요', url); }
+  };
+
+  // 주소 끝 #2 처럼 탭 번호가 있으면 그 탭으로 시작
+  const startTab = parseInt(location.hash.replace('#', ''), 10);
+  if (Number.isInteger(startTab) && startTab >= 1 && startTab <= TABS.length) activeTab = startTab - 1;
+
+  render();
+  showBanner('불러오는 중…');
+  subscribe();
+</script>
+</body>
+</html>
